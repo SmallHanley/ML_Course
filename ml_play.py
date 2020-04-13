@@ -2,12 +2,14 @@
 The template of the main script of the machine learning process
 """
 import pickle
+from os import path
+
 import numpy as np
 import games.arkanoid.communication as comm
 from games.arkanoid.communication import ( \
     SceneInfo, GameStatus, PlatformAction
 )
-import os.path as path
+
 
 
 def ml_loop():
@@ -21,30 +23,32 @@ def ml_loop():
     is behind of the current frame in the game process. Try to decrease the fps
     to avoid this situation.
     """
-    tmp = [100, 400]
+
     # === Here is the execution order of the loop === #
     # 1. Put the initialization code here.
+    tmp = [100, 400]
     ball_served = False
-    filename = path.join(path.dirname(__file__),"save\clf_KNN_BallAndDirection.pickle")
+    filename = path.join(path.dirname(__file__), 'save', 'clf_KNN_BallAndDirection.pickle')
     with open(filename, 'rb') as file:
         clf = pickle.load(file)
+    s = [93, 93]
+
+    def get_direction(ball_x, ball_y, ball_pre_x, ball_pre_y):
+        VectorX = ball_x - ball_pre_x
+        VectorY = ball_y - ball_pre_y
+        if (VectorX >= 0 and VectorY >= 0):
+            return 0
+        elif (VectorX > 0 and VectorY < 0):
+            return 1
+        elif (VectorX < 0 and VectorY > 0):
+            return 2
+        elif (VectorX < 0 and VectorY < 0):
+            return 3
 
     # 2. Inform the game process that ml process is ready before start the loop.
     comm.ml_ready()
     
-    s = [93,93]
-    def get_direction(ball_x,ball_y,ball_pre_x,ball_pre_y):
-        VectorX = ball_x - ball_pre_x
-        VectorY = ball_y - ball_pre_y
-        if(VectorX>=0 and VectorY>=0):
-            return 0
-        elif(VectorX>0 and VectorY<0):
-            return 1
-        elif(VectorX<0 and VectorY>0):
-            return 2
-        elif(VectorX<0 and VectorY<0):
-            return 3
-        
+
 
     # 3. Start an endless loop.
     while True:
@@ -85,13 +89,14 @@ def ml_loop():
         else:
                 
             y = clf.predict(feature)
+            
             if y == 0:
                 comm.send_instruction(scene_info.frame, PlatformAction.NONE)
-                #print('NONE')
+                print('NONE')
             elif y == 1:
                 comm.send_instruction(scene_info.frame, PlatformAction.MOVE_LEFT)
-                #print('LEFT')
+                print('LEFT')
             elif y == 2:
                 comm.send_instruction(scene_info.frame, PlatformAction.MOVE_RIGHT)
-                #print('RIGHT')
+                print('RIGHT')
         tmp = scene_info.ball
