@@ -40,7 +40,7 @@ def ml_loop(side: str):
             else : return 2 # goes left
 
     def ml_loop_for_1P():
-        if scene_info["frame"] < 1000:
+        if scene_info["frame"] < 1000 or (scene_info["ball_speed"][1] > 0 and scene_info["ball"][1] > 260):
             if scene_info["ball_speed"][1] < 0 and scene_info['ball'][1] > 250:
                 x = (105 - scene_info["ball"][1]) // scene_info["ball_speed"][1]
                 pred = scene_info["ball"][0]+(scene_info["ball_speed"][0]*x)
