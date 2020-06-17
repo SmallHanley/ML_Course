@@ -1,14 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Tue Jun  9 04:31:09 2020
-
-@author: Dining
-"""
-import pickle
-import numpy as np
-from os import path
-import os 
-
 class MLPlay:
     def __init__(self, player):
         self.player = player
@@ -20,97 +9,80 @@ class MLPlay:
             self.player_no = 2
         elif self.player == "player4":
             self.player_no = 3
-        self.car_vel = 0 #initialization
-        self.car_pos = (0,0)
-        self.feature = [0,0,0,0,0,0,0,0,0]
-        
-        with open(path.join(path.dirname(__file__), 'save', 'model.pickle'), 'rb') as file: self.model = pickle.load(file)
+        self.car_vel = 0
+        self.car_pos = ()
         pass
-    
+
     def update(self, scene_info):
         """
         Generate the command according to the received scene information
         """
-        def check_grid():
-            self.car_pos = scene_info[self.player]
-            if scene_info["status"] != "ALIVE":
-                return "RESET"
+        check = [0, 0, 0]
+        self.car_pos = scene_info[self.player]
+        if self.car_pos != ():
+            if self.car_pos[0]  < 35:
+                check[0] = 4
+            if self.car_pos[0] > 595:
+                check[2] = 4
+        for car in scene_info["cars_info"]:
+            if car["id"]==self.player_no:
+                self.car_vel = car["velocity"]
+            elif car['pos'] != () and self.car_pos != ():
+                if(car['pos'][0] > self.car_pos[0] - 70 and car['pos'][0] < self.car_pos[0] + 70 and car['pos'][1] <= self.car_pos[1] and car['pos'][1] > self.car_pos[1] - 100):
+                    check[1] = 3
+                if(car['pos'][0] > self.car_pos[0] - 100 and car['pos'][0] < self.car_pos[0] - 20 and car['pos'][1] <= self.car_pos[1] + 10 and car['pos'][1] > self.car_pos[1] - 100):
+                    check[0] = 3
+                if(car['pos'][0] > self.car_pos[0] + 20 and car['pos'][0] < self.car_pos[0] + 100 and car['pos'][1] <= self.car_pos[1] + 10 and car['pos'][1] > self.car_pos[1] - 100):
+                    check[2] = 3
+                if(car['pos'][0] > self.car_pos[0] - 70 and car['pos'][0] < self.car_pos[0] + 70 and car['pos'][1] <= self.car_pos[1] - 100 and car['pos'][1] > self.car_pos[1] - 200):
+                    check[1] = 2
+                if(car['pos'][0] > self.car_pos[0] - 100 and car['pos'][0] < self.car_pos[0] - 20 and car['pos'][1] <= self.car_pos[1] - 100 and car['pos'][1] > self.car_pos[1] - 200):
+                    check[0] = 2
+                if(car['pos'][0] > self.car_pos[0] + 20 and car['pos'][0] < self.car_pos[0] + 100 and car['pos'][1] <= self.car_pos[1] - 100 and car['pos'][1] > self.car_pos[1] - 200):
+                    check[2] = 2
+                if(car['pos'][0] > self.car_pos[0] - 70 and car['pos'][0] < self.car_pos[0] + 70 and car['pos'][1] <= self.car_pos[1] - 200 and car['pos'][1] > self.car_pos[1] - 400):
+                    check[1] = 1
+                if(car['pos'][0] > self.car_pos[0] - 100 and car['pos'][0] < self.car_pos[0] - 20 and car['pos'][1] <= self.car_pos[1] - 200 and car['pos'][1] > self.car_pos[1] - 400):
+                    check[0] = 1
+                if(car['pos'][0] > self.car_pos[0] + 20 and car['pos'][0] < self.car_pos[0] + 100 and car['pos'][1] <= self.car_pos[1] - 200 and car['pos'][1] > self.car_pos[1] - 400):
+                    check[2] = 1
+        if scene_info["status"] != "ALIVE":
+            return "RESET"
         
-            if len(self.car_pos) == 0:
-                self.car_pos = (0,0)
-
-            grid = set()
-            for i in range(len(scene_info["cars_info"])): # for all cars information in scene of one frame
-                car = scene_info["cars_info"][i]
-                if car["id"]==self.player_no: #player's car information
-                    self.car_vel = car["velocity"] 
-                else: # computer's cars information
-                    if self.car_pos[0] <= 65: # left bound 
-                        grid.add(1)
-                        grid.add(4)
-                        grid.add(7)
-                    elif self.car_pos[0] >= 565: # right bound
-                        grid.add(3)
-                        grid.add(6)
-                        grid.add(9)
-
-                    x = self.car_pos[0] - car["pos"][0] # x relative position
-                    y = self.car_pos[1] - car["pos"][1] # y relative position
-
-                    if x <= 40 and x >= -40 :      
-                        if y > 0 and y < 300:
-                            grid.add(2)
-                            if y < 200:
-                                grid.add(5) 
-                        elif y < 0 and y > -200:
-                            grid.add(8)
-                    if x > -100 and x < -40 :
-                        if y > 80 and y < 250:
-                            grid.add(3)
-                        elif y < -80 and y > -200:
-                            grid.add(9)
-                        elif y < 80 and y > -80:
-                            grid.add(6)
-                    if x < 100 and x > 40:
-                        if y > 80 and y < 250:
-                            grid.add(1)
-                        elif y < -80 and y > -200:
-                            grid.add(7)
-                        elif y < 80 and y > -80:
-                            grid.add(4)
-#            print(grid)
-            return move(grid = grid)
         
-        def move(grid):
+        if check[1] != 0 and check[0] == 0 and check[2] == 0:
+            if self.car_pos[0] < 315:
+                return ['SPEED', 'MOVE_RIGHT']
+            else:
+                return ['SPEED', 'MOVE_LEFT']
+        elif check[1] != 0 and check[0] == 0 and check[2] != 0:
+            return ['SPEED', 'MOVE_LEFT']
+        elif check[1] != 0 and check[0] != 0 and check[2] == 0:
+            return ['SPEED', 'MOVE_RIGHT']
+        elif check[1] != 0 and check[0] != 0 and check[2] != 0:
+            idx = check.index(min(check))
+            if idx == 0 and check[idx] == 1:
+                return ['SPEED', 'MOVE_LEFT']
+            elif idx == 0 and check[idx] == 2:
+                return ['MOVE_LEFT']
+            elif idx == 0 and check[idx] == 3:
+                return ['BRAKE', 'MOVE_LEFT']
+            elif idx == 1 and check[idx] == 1:
+                return ['SPEED']
+            elif idx == 1 and check[idx] == 2:
+                return []
+            elif idx == 1 and check[idx] == 3:
+                return ['BRAKE']
+            elif idx == 1 and check[idx] == 1:
+                return ['SPEED', 'MOVE_RIGHT']
+            elif idx == 1 and check[idx] == 2:
+                return ['MOVE_RIGHT']
+            else:
+                return ['BRAKE', 'MOVE_RIGHT']
+        elif check[1] == 0:
+            return ['SPEED']
+        else:['BRAKE']
 
-            grid_tolist = list(grid)
-            grid_data = [0,0,0,0,0,0,0,0,0]
-            for i in grid_tolist:
-                grid_data[i-1] = 1 # change grid set into feature's data shape
-            grid_data = np.array(grid_data).reshape(1,-1)
-            self.feature = grid_data
-            self.feature = np.array(self.feature)
-            self.feature = self.feature.reshape((1,-1))
-            y = self.model.predict(self.feature) 
-
-            if y == 0:
-                return ["SPEED"]
-            if y == 1:
-                return ["SPEED", "MOVE_LEFT"]
-            if y == 2:
-                return ["SPEED", "MOVE_RIGHT"]
-            if y == 3:
-                return ["BRAKE"]
-            if y == 4:
-                return ["BRAKE", "MOVE_LEFT"]
-            if y == 5:
-                return ["BRAKE", "MOVE_RIGHT"]
-            if y == 6:
-                return ["LEFT"]
-            if y == 7:
-                return ["RIGHT"]
-        
-        return check_grid()
 
     def reset(self):
         """
